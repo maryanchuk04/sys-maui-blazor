@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Maui_sys_app.Data;
 using Havit.Blazor.Components.Web;
 
 namespace Maui_sys_app;
@@ -17,14 +16,12 @@ public static class MauiProgram
 			});
         
         builder.Services.AddMauiBlazorWebView();
-        builder.Services.AddHxServices();
+        
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
 		builder.Logging.AddDebug();
 #endif
-
-		builder.Services.AddSingleton<WeatherForecastService>();
-
-		return builder.Build();
+        builder.Services.AddHxServices();
+        return builder.Build();
 	}
 }

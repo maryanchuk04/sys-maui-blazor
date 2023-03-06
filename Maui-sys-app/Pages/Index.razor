@@ -6,11 +6,23 @@
     <div class="d-flex justify-content-between my-2">
         <HxInputText Placeholder="Search..." @bind-Value="search" style="width: 200px" />
         <HxButton Color="ThemeColor.Primary" Text="Search" @onclick="HandleClick"  />
+        <HxButton OnClick="HandleShowClick" Color="ThemeColor.Primary">Show modal</HxButton>
     </div>
     <div class="h-75">
         <div contenteditable="true" class="h-100 w-100" style="min-height: 400px">@((MarkupString)editor)</div>
         <HxInputFile OnChange="@HandleFileChange" Label="Upload file" Accept=".txt,.custom" />
     </div>
+
+    
+
+    <HxModal @ref="myModal" Title="Modal title" Backdrop="ModalBackdrop.Static">
+        <BodyTemplate>
+            Modal body
+        </BodyTemplate>
+        <FooterTemplate>
+            <HxButton Text="Close" OnClick="HandleHideClick" Color="ThemeColor.Primary" />
+        </FooterTemplate>
+    </HxModal>
 </div>
 
 
@@ -18,14 +30,19 @@
     private string fileContent;
     private string search;
     private string editor;
+    private HxModal myModal;
 
     private void HandleClick()
     {
         if (!string.IsNullOrEmpty(search))
         {
-            var replacedText = $"<span style='background-color: yellow'>{search}</span>";
+            var replacedText = $"<span style='background-color: gray; color: white'>{search}</span>";
             editor = fileContent.Replace(search, replacedText);
+            return;
         }
+
+        if (!string.IsNullOrEmpty(fileContent))
+            editor = fileContent;
     }
 
     private async Task HandleFileChange(InputFileChangeEventArgs e)
@@ -44,5 +61,15 @@
                 }
             }
         }
+    }
+
+    private async Task HandleShowClick()
+    {
+        await myModal.ShowAsync();
+    }
+
+    private async Task HandleHideClick()
+    {
+        await myModal.HideAsync();
     }
 }
