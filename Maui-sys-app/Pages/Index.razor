@@ -1,0 +1,48 @@
+﻿@page "/"
+
+<h1>Hello</h1>
+
+<div style ="height: 50vh">
+    <div class="d-flex justify-content-between my-2">
+        <HxInputText Placeholder="Search..." @bind-Value="search" style="width: 200px" />
+        <HxButton Color="ThemeColor.Primary" Text="Search" @onclick="HandleClick"  />
+    </div>
+    <div class="h-75">
+        <div contenteditable="true" class="h-100 w-100" style="min-height: 400px">@((MarkupString)editor)</div>
+        <HxInputFile OnChange="@HandleFileChange" Label="Upload file" Accept=".txt,.custom" />
+    </div>
+</div>
+
+
+@code{
+    private string fileContent;
+    private string search;
+    private string editor;
+
+    private void HandleClick()
+    {
+        if (!string.IsNullOrEmpty(search))
+        {
+            var replacedText = $"<span style='background-color: yellow'>{search}</span>";
+            editor = fileContent.Replace(search, replacedText);
+        }
+    }
+
+    private async Task HandleFileChange(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                await file.OpenReadStream().CopyToAsync(memoryStream);
+                memoryStream.Position = 0;
+                using (var streamReader = new StreamReader(memoryStream))
+                {
+                    fileContent = await streamReader.ReadToEndAsync();
+                    editor = fileContent;
+                }
+            }
+        }
+    }
+}
