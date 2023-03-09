@@ -5,64 +5,42 @@
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components
 @using ThemeColor = Havit.Blazor.Components.Web.Bootstrap.ThemeColor;
-@page "/second"
+@page "/"
 
+<div style="height: 90vh" class="d-flex justify-content-between gap-4">
+    <div class="w-75 h-100 d-flex flex-column justify-content-around">
+        <div class="d-flex justify-content-between my-2 w-100">
+            <div class="d-flex">
+                <HxInputText Placeholder="Search..." @bind-Value="search" style="width: 200px" />
+                <HxButton CssClass="mx-2" Color="ThemeColor.Secondary" Text="<-" @onclick="HandlePrevious" Enabled="SearchIsClicked || goodWords.Count != 0" />
+                <HxButton CssClass="mx-2" Color="ThemeColor.Secondary" Text="->" @onclick="HandleNext" Enabled="SearchIsClicked || goodWords.Count != 0" />
+            </div>
 
-<div style="height: 90vh" class="d-flex flex-column justify-content-between">
-    <div class="d-flex justify-content-between my-2">
-        <div class="d-flex">
-            <HxInputText Placeholder="Search..." @bind-Value="search" style="width: 200px" />
-            <HxButton CssClass="mx-2" Color="ThemeColor.Secondary" Text="<-" @onclick="HandlePrevious" Enabled="SearchIsClicked || goodWords.Count != 0"/>
-            <HxButton CssClass="mx-2" Color="ThemeColor.Secondary" Text="->" @onclick="HandleNext" Enabled="SearchIsClicked || goodWords.Count != 0" />
+            <div>
+                <HxButton Color="ThemeColor.Primary" Text="Search" @onclick="HandleSearch" />
+                <HxButton Color="ThemeColor.Secondary" Text="Remove selection" @onclick="RemoveSelection" />
+                <HxButton OnClick="ClearAll" Color="ThemeColor.Warning">Clear all</HxButton>
+            </div>
         </div>
-
-        <div>
-            <HxButton Color="ThemeColor.Primary" Text="Search" @onclick="HandleClick" />
-            <HxButton Color="ThemeColor.Secondary" Text="Remove selection" @onclick="RemoveSelection" />
-            <HxButton OnClick="HandleShowClick" Color="ThemeColor.Danger">Delete</HxButton>
-            <HxButton OnClick="ClearAll" Color="ThemeColor.Warning">Clear all</HxButton>
+        <div class="h-75">
+            <div @ref="divElement" contenteditable="true" class="w-100 rounded-1" style="height: 80%;  min-height: 400px; overflow-y: scroll; max-height: 100%; border: 1px solid black; padding: 10px">@((MarkupString)editor)</div>
+            <HxInputFile OnChange="@HandleFileChange" Label="Upload file" Accept=".txt,.doc,.docx,.custom" />
         </div>
     </div>
-    <div class="h-75">
-        <div @ref="divElement" contenteditable="true" class="w-100 rounded-1" style="height: 80%;  min-height: 400px; overflow-y: scroll; max-height: 100%; border: 1px solid black; padding: 10px">@((MarkupString)editor)</div>
-        <HxInputFile OnChange="@HandleFileChange" Label="Upload file" Accept=".txt,.doc,.docx,.custom" />
-    </div>
-
-    <HxModal @ref="myModal" Title="Delete window" Backdrop="ModalBackdrop.Static" Centered="true">
-        <BodyTemplate>
-            <HxInputText Placeholder="Deleted word..." @bind-Value="deletedWord" style="width: 200px" />
+    <div class="w-25 my-2 ">
+            <h3>Delete word</h3>
             <EditForm Model="deleteForm">
                 <DataAnnotationsValidator />
-
                 <HxRadioButtonList Label="Delete type"
                                    TItem="TypeOfDelete"
                                    TValue="string"
-                                   Data="@types"                     
+                                   Data="@types"
                                    @bind-Value="@deleteForm.SelectedType"
                                    ItemTextSelector="@(p => p.Name)"
                                    ItemValueSelector="@(p => p.Value)" />
-                @if (deleteForm.SelectedType == "0")
-                {
-                    <div class = "d-flex w-100 align-items-center justify-content-between">
-                        <HxButton CssClass="mx-2" Color="ThemeColor.Secondary" Text="<-" @onclick="DeletePrevious" Enabled="goodWords.Count != 0" />
-                        @if (goodWords.Count != 0)
-                        {
-                            <p>@goodWords[deletedIndex]</p>
-                        }
-                        else
-                        {
-                            <p>search your word</p>
-                        }
-                        <HxButton CssClass="mx-2" Color="ThemeColor.Secondary" Text="->" @onclick="DeleteNext" Enabled="goodWords.Count != 0" />
-                    </div>
-                }
             </EditForm>
-        </BodyTemplate>
-        <FooterTemplate>
-            <HxButton Text="Close" OnClick="HandleHideClick" Color="ThemeColor.Secondary" />
-            <HxButton Text="Delete" OnClick="DeleteWords" Color="ThemeColor.Success" Enabled="deletedWord.Length != 0   " />
-        </FooterTemplate>
-    </HxModal>
+            <HxButton Text="Delete" OnClick="DeleteWords" Color="ThemeColor.Success" Enabled="search.Length != 0 && goodWords != null && SearchIsClicked" />
+    </div>
 </div>
 
 
@@ -78,9 +56,7 @@
     private string deletedWord = string.Empty;
     private int index = 0;
     private bool SearchIsClicked = false;
-    private int deletedIndex = 0;
 
-    private HxModal myModal;
     private int currentWordIndex = 0;
     private List<string> goodWords = new List<string>();
 
@@ -109,25 +85,6 @@
         return await jsRuntime.InvokeAsync<string>("eval", $"document.querySelector('div[contenteditable]').textContent");
     }
 
-    public void DeleteNext()
-    {
-        if (deletedIndex == goodWords.Count - 1)
-        {
-            deletedIndex = 0;
-        }
-
-        deletedIndex++;
-    }
-
-    public void DeletePrevious()
-    {
-        if (deletedIndex == 0)
-        {
-            deletedIndex = goodWords.Count;
-        }
-
-        deletedIndex--;
-    }
 
     private void ClearAll()
     {
@@ -140,14 +97,11 @@
         goodWords = new List<string>();
     }
 
-    private async Task DeleteWords()
+    private async Task DeleteWords(EventArgs e)
     {
-        RemoveSelection();
-        var mask = new Mask(deletedWord);
-        goodWords = mask.GoodWordsInText(editor);
-
         if (deleteForm.SelectedType == "1")
         {
+            RemoveSelection();
             foreach (var item in goodWords)
             {
                 editor = editor.ReplaceFirst(item, "");
@@ -159,13 +113,14 @@
         }
         if (deleteForm.SelectedType == "0")
         {
-
-
-            editor = editor.ReplaceFirst(goodWords[deletedIndex], "");
-            goodWords.Remove(goodWords[deletedIndex]);
+            if(currentWordIndex == 0)
+            {
+                await App.Current.MainPage.DisplayAlert("Alert", $"You must choose word which you want to delete", "OK");
+                return;
+            }
+            editor = editor.ReplaceFirst(RedText(goodWords[currentWordIndex - 1]), "");
+            goodWords.Remove(goodWords[currentWordIndex - 1]);
         }
-
-        await HandleHideClick();
     }
 
     private void RemoveSelection()
@@ -183,11 +138,16 @@
         SearchIsClicked = false;
     }
 
-    private async Task HandleClick()
+    private async Task HandleSearch(EventArgs e)
     {
-
-        var temp = string.Empty;
         editor = await GetDivText();
+
+        if (string.IsNullOrEmpty(search) || string.IsNullOrEmpty(search))
+        {
+            await App.Current.MainPage.DisplayAlert("Alert", $"Please input all data", "OK");
+            return;
+        }
+        var temp = string.Empty;
 
         RemoveSelection();
 
@@ -195,20 +155,28 @@
         {
             var mask = new Mask(search);
             goodWords = mask.GoodWordsInText(editor);
+
+            if(goodWords.Count == 0)
+            {
+                await App.Current.MainPage.DisplayAlert("Alert", $"Word with mask = {search} not found", "OK");
+                search = string.Empty;
+                return;
+            }
+
             var replacedText = GrayText(search);
             int tempIndex = 0;
 
             foreach (var word in goodWords)
             {
-                if(tempIndex == 0)
+                if (tempIndex == 0)
                 {
-                    tempIndex = editor.IndexOf(word, tempIndex); 
+                    tempIndex = editor.IndexOf(word, tempIndex);
                     editor = editor.ReplaceFirstByIndex(word, GrayText(word), tempIndex);
 
                 }
                 else
                 {
-                    tempIndex = editor.IndexOf(word, tempIndex + word.Length); 
+                    tempIndex = editor.IndexOf(word, tempIndex + word.Length);
                     editor = editor.ReplaceFirstByIndex(word, GrayText(word), tempIndex);
                 }
             }
@@ -257,12 +225,12 @@
             return;
         }
 
-        var grayText = GrayText(goodWords[currentWordIndex-2]);
-        var redText = RedText(goodWords[currentWordIndex-2]);
+        var grayText = GrayText(goodWords[currentWordIndex - 2]);
+        var redText = RedText(goodWords[currentWordIndex - 2]);
 
         //
         var a = editor.Substring(index, 40);
-        editor = editor.ReplaceFirstByIndex(grayText, redText, editor.LastIndexOf(grayText,  index, index - 1 ));
+        editor = editor.ReplaceFirstByIndex(grayText, redText, editor.LastIndexOf(grayText, index, index - 1));
 
         if (currentWordIndex > 0)
         {
@@ -286,24 +254,9 @@
                 memoryStream.Position = 0;
                 using (var streamReader = new StreamReader(memoryStream))
                 {
-                    startContent = await streamReader.ReadToEndAsync();
-                    editor = startContent;
+                    editor = await streamReader.ReadToEndAsync();
                 }
             }
         }
     }
-
-
-
-    private async Task HandleShowClick()
-    {
-        await myModal.ShowAsync();
-
-    }
-
-    private async Task HandleHideClick()
-    {
-        await myModal.HideAsync();
-    }
-
 }
